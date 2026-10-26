@@ -7,7 +7,7 @@ struct ContentView: View {
     let pointsPerCm = UIScreen.pointsPerCentimeter ?? 200
 
     var body: some View {
-        SampleRectangleView()
+        RulerView()
             .environment(\.screenConversions, .device ?? .zero)
     }
 }

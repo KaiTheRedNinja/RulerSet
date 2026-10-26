@@ -14,14 +14,21 @@ struct UIScreenConversion {
     var pixelsPerCentimeter: CGFloat
     var pointsPerInch: CGFloat
     var pointsPerCentimeter: CGFloat
-    var screenBoundPoints: CGRect
+    var screenSizePoints: CGSize
+
+    var screenSizeCm: CGSize {
+        .init(
+            width: screenSizePoints.width / pointsPerCentimeter,
+            height: screenSizePoints.height / pointsPerCentimeter
+        )
+    }
 
     static let zero: UIScreenConversion = .init(
         pixelsPerInch: 0,
         pixelsPerCentimeter: 0,
         pointsPerInch: 0,
         pointsPerCentimeter: 0,
-        screenBoundPoints: .zero
+        screenSizePoints: .zero
     )
 
     static let device: UIScreenConversion? = {
@@ -37,11 +44,37 @@ struct UIScreenConversion {
             pixelsPerCentimeter: pixelsPerCentimeter,
             pointsPerInch: pointsPerInch,
             pointsPerCentimeter: pointsPerCentimeter,
-            screenBoundPoints: scene.screen.bounds
+            screenSizePoints: scene.screen.bounds.size
         )
     }()
 }
 
 extension EnvironmentValues {
     @Entry var screenConversions: UIScreenConversion = .zero
+}
+
+extension View {
+    func frameCm(
+        screen: UIScreenConversion,
+        width: CGFloat? = nil,
+        height: CGFloat? = nil,
+        alignment: Alignment = .center
+    ) -> some View {
+        self.frame(
+            width: (width != nil) ? (width! * screen.pointsPerCentimeter) : nil,
+            height: (height != nil) ? (height! * screen.pointsPerCentimeter) : nil,
+            alignment: alignment
+        )
+    }
+
+    func offsetCm(
+        screen: UIScreenConversion,
+        x: CGFloat = 0,
+        y: CGFloat = 0,
+    ) -> some View {
+        self.offset(
+            x: x * screen.pointsPerCentimeter,
+            y: y * screen.pointsPerCentimeter
+        )
+    }
 }

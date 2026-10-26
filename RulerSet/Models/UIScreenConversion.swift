@@ -1,28 +1,13 @@
-import SwiftUI
-import Playgrounds
+//
+//  UIScreenConversion.swift
+//  RulerSet
+//
+//  Created by Kai Quan Tay on 26/10/26.
+//
+
 import UIScreenExtension
 import UIKit
-
-struct ContentView: View {
-    let pointsPerCm = UIScreen.pointsPerCentimeter ?? 200
-
-    var body: some View {
-        SampleRectangleView()
-            .environment(\.screenConversions, .device ?? .zero)
-    }
-}
-
-struct SampleRectangleView: View {
-    @Environment(\.screenConversions) var screen
-
-    var body: some View {
-        Rectangle()
-            .frame(width: 1.0 * screen.pointsPerCentimeter, height: 3.0 * screen.pointsPerCentimeter)
-            .onAppear {
-                print("PPC: \(screen.pointsPerCentimeter)")
-            }
-    }
-}
+import SwiftUI
 
 struct UIScreenConversion {
     var pixelsPerInch: CGFloat

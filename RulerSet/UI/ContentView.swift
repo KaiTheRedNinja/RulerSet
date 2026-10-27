@@ -23,3 +23,24 @@ struct SampleRectangleView: View {
             }
     }
 }
+
+extension View {
+    @inlinable
+    public func reverseMask<Mask: View>(
+        alignment: Alignment = .center,
+        clearance: CGFloat = 0,
+        @ViewBuilder _ mask: () -> Mask
+    ) -> some View {
+        self
+            .padding(clearance)
+            .mask {
+                Rectangle()
+                    .overlay(alignment: alignment) {
+                        mask()
+                            .padding(clearance)
+                            .blendMode(.destinationOut)
+                    }
+            }
+            .padding(-clearance)
+    }
+}

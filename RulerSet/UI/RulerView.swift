@@ -41,32 +41,7 @@ struct RulerView: View {
             let widthCm = Int(sizePts.width / screen.pointsPerCentimeter)
 
             // background
-            Path { path in
-                let totHeightPt = CGFloat(heightCm) * screen.pointsPerCentimeter + offsetPts
-                let totWidthPt = CGFloat(widthCm) * screen.pointsPerCentimeter + offsetPts
-                // draw a triangle around the shape
-                path.move(to: .zero)
-                path.addLine(to: .init(x: totWidthPt, y: 0))
-                path.addLine(to: .init(x: totWidthPt, y: 1 * screen.pointsPerCentimeter))
-                path.addLine(to: .init(x: 1 * screen.pointsPerCentimeter, y: totHeightPt))
-                path.addLine(to: .init(x: 0, y: totHeightPt))
-                path.addLine(to: .zero)
-                path.closeSubpath()
-
-                // draw a smaller inner triangle, offset in all directions by 1.5cm
-
-                path.move(to: .init(x: 1.5 * screen.pointsPerCentimeter, y: 1.5 * screen.pointsPerCentimeter))
-                path.addLine(to: .init(x: (CGFloat(widthCm) - 2.0) * screen.pointsPerCentimeter + offsetPts, y: 1.5 * screen.pointsPerCentimeter))
-                path.addLine(
-                    to: .init(
-                        x: 1.5 * screen.pointsPerCentimeter,
-                        y: (CGFloat(heightCm) - 2.0 * (totHeightPt / totWidthPt)) * screen.pointsPerCentimeter + offsetPts
-                    )
-                )
-                path.addLine(to: .init(x: 1.5 * screen.pointsPerCentimeter, y: 1.5 * screen.pointsPerCentimeter))
-                path.closeSubpath()
-            }
-            .fill(Color.red, style: .init(eoFill: true))
+            rulerBackground(sizePts: sizePts)
 
             // tickers
             Path { path in
@@ -124,6 +99,51 @@ struct RulerView: View {
                     .offsetCm(screen: screen, x: 0.5 + 0.1 + CGFloat(cm), y: 0.4)
                     .offsetCm(screen: screen, x: cm == widthCm ? -0.4 : 0)
             }
+        }
+    }
+
+    func rulerBackground(sizePts: CGSize) -> some View {
+        let offsetPts = 0.5 * screen.pointsPerCentimeter
+
+        let heightCm = Int(sizePts.height / screen.pointsPerCentimeter)
+        let widthCm = Int(sizePts.width / screen.pointsPerCentimeter)
+
+        // background
+        let offsetWidth = CGFloat(widthCm) * screen.pointsPerCentimeter + offsetPts
+        let offsetHeight = CGFloat(heightCm) * screen.pointsPerCentimeter + offsetPts
+
+        let tickerSize = 0.8 * screen.pointsPerCentimeter
+        let extraWidth = ((tickerSize * offsetWidth) - (tickerSize * tickerSize))/(offsetHeight - tickerSize)
+        let extraHeight = ((tickerSize * offsetHeight) - (tickerSize * tickerSize))/(offsetWidth - tickerSize)
+
+        let totWidthPt = offsetWidth + extraWidth
+        let totHeightPt = offsetHeight + extraHeight
+
+        func drawInset(insetCm: CGFloat) -> Path {
+            var path = Path()
+            // draw a smaller inner triangle, offset in all directions by 1.5cm
+            let inset = insetCm * screen.pointsPerCentimeter
+            let scale = (totWidthPt - inset * 2.7) / totWidthPt
+            // note: we could do smth with trig, but i'm not bothered so we'll treat the diagonal inset as 1.7x the horizontal instead.
+
+            path.move(to: .init(x: inset, y: inset))
+            path.addLine(to: .init(x: inset + totWidthPt * scale, y: inset))
+            path.addLine(to: .init(x: inset, y: inset + totHeightPt * scale))
+            path.addLine(to: .init(x: inset, y: inset))
+            path.closeSubpath()
+
+            return path
+        }
+
+        return ZStack(alignment: .topLeading) {
+            drawInset(insetCm: 0)
+                .fill(Color.blue.opacity(0.3))
+            drawInset(insetCm: 0.5)
+                .fill(Color.blue.opacity(0.3))
+        }
+        .reverseMask(clearance: 30) {
+            drawInset(insetCm: 1.5)
+                .fill(Color.white)
         }
     }
 }

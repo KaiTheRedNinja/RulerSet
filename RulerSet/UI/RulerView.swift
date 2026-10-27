@@ -37,8 +37,40 @@ struct RulerView: View {
             Color.white.opacity(0.01)
             let offsetPts = 0.5 * screen.pointsPerCentimeter
 
+            let heightCm = Int(sizePts.height / screen.pointsPerCentimeter)
+            let widthCm = Int(sizePts.width / screen.pointsPerCentimeter)
+
+            // background
             Path { path in
-                let mmLen = Int(sizePts.height / screen.pointsPerCentimeter) * 10
+                let totHeightPt = CGFloat(heightCm) * screen.pointsPerCentimeter + offsetPts
+                let totWidthPt = CGFloat(widthCm) * screen.pointsPerCentimeter + offsetPts
+                // draw a triangle around the shape
+                path.move(to: .zero)
+                path.addLine(to: .init(x: totWidthPt, y: 0))
+                path.addLine(to: .init(x: totWidthPt, y: 1 * screen.pointsPerCentimeter))
+                path.addLine(to: .init(x: 1 * screen.pointsPerCentimeter, y: totHeightPt))
+                path.addLine(to: .init(x: 0, y: totHeightPt))
+                path.addLine(to: .zero)
+                path.closeSubpath()
+
+                // draw a smaller inner triangle, offset in all directions by 1.5cm
+
+                path.move(to: .init(x: 1.5 * screen.pointsPerCentimeter, y: 1.5 * screen.pointsPerCentimeter))
+                path.addLine(to: .init(x: (CGFloat(widthCm) - 2.0) * screen.pointsPerCentimeter + offsetPts, y: 1.5 * screen.pointsPerCentimeter))
+                path.addLine(
+                    to: .init(
+                        x: 1.5 * screen.pointsPerCentimeter,
+                        y: (CGFloat(heightCm) - 2.0 * (totHeightPt / totWidthPt)) * screen.pointsPerCentimeter + offsetPts
+                    )
+                )
+                path.addLine(to: .init(x: 1.5 * screen.pointsPerCentimeter, y: 1.5 * screen.pointsPerCentimeter))
+                path.closeSubpath()
+            }
+            .fill(Color.red, style: .init(eoFill: true))
+
+            // tickers
+            Path { path in
+                let mmLen = heightCm * 10
                 // vertical ruler
                 for mm in 0...mmLen {
                     let tickWidth: CGFloat = if mm == 0 { 0.5 } // zero is at 0.5 to allow for crossing
@@ -58,7 +90,7 @@ struct RulerView: View {
                 }
 
                 // horizontal ruler
-                let mmWidth = Int(sizePts.width / screen.pointsPerCentimeter) * 10
+                let mmWidth = widthCm * 10
                 for mm in 0...mmWidth {
                     let tickWidth: CGFloat = if mm == 0 { 0.5 } // zero is at 0.5 to allow for crossing
                     else if mm%10 == 0 { 0.8 }
@@ -78,16 +110,19 @@ struct RulerView: View {
             }
             .stroke(Color.primary, lineWidth: 2)
 
-            ForEach(0..<(Int(screen.screenSizeCm.height + 1)), id: \.self) { cm in
+            // labels
+            ForEach(0..<(heightCm + 1), id: \.self) { cm in
                 Text("\(cm)")
                     .rotationEffect(.degrees(90))
                     .offsetCm(screen: screen, x: 0.6, y: 0.5 + CGFloat(cm))
+                    .offsetCm(screen: screen, y: cm == heightCm ? -0.4 : 0)
             }
 
-            ForEach(1..<(Int(screen.screenSizeCm.height + 1)), id: \.self) { cm in
+            ForEach(1..<(widthCm + 1), id: \.self) { cm in
                 Text("\(cm)")
                     .rotationEffect(.degrees(180))
                     .offsetCm(screen: screen, x: 0.5 + 0.1 + CGFloat(cm), y: 0.4)
+                    .offsetCm(screen: screen, x: cm == widthCm ? -0.4 : 0)
             }
         }
     }

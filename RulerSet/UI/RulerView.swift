@@ -10,13 +10,35 @@ import SwiftUI
 struct RulerView: View {
     @Environment(\.screenConversions) var screen
 
+    // TODO: consider making this app storage
+    @State var topSide: Bool = true
+
     var body: some View {
+        GeometryReader { geom in
+            ZStack(alignment: .center) {
+                rulers(sizePts: geom.size)
+                    .rotationEffect(topSide ? .degrees(0) : .degrees(180))
+
+                Button {
+                    withAnimation {
+                        topSide.toggle()
+                    }
+                } label: {
+                    Image(systemName: topSide ? "rotate.right.fill" : "rotate.left.fill")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .ignoresSafeArea(edges: topSide ? [] : .bottom)
+    }
+
+    func rulers(sizePts: CGSize) -> some View {
         ZStack(alignment: .topLeading) {
             Color.white.opacity(0.01)
             let offsetPts = 0.5 * screen.pointsPerCentimeter
 
             Path { path in
-                let mmLen = Int(screen.screenSizeCm.height) * 10
+                let mmLen = Int(sizePts.height / screen.pointsPerCentimeter) * 10
                 // vertical ruler
                 for mm in 0...mmLen {
                     let tickWidth: CGFloat = if mm == 0 { 0.5 } // zero is at 0.5 to allow for crossing
@@ -36,7 +58,7 @@ struct RulerView: View {
                 }
 
                 // horizontal ruler
-                let mmWidth = Int(screen.screenSizeCm.width) * 10
+                let mmWidth = Int(sizePts.width / screen.pointsPerCentimeter) * 10
                 for mm in 0...mmWidth {
                     let tickWidth: CGFloat = if mm == 0 { 0.5 } // zero is at 0.5 to allow for crossing
                     else if mm%10 == 0 { 0.8 }
@@ -69,4 +91,9 @@ struct RulerView: View {
             }
         }
     }
+}
+
+#Preview {
+    RulerView()
+        .environment(\.screenConversions, .device ?? .zero)
 }

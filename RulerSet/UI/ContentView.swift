@@ -8,6 +8,7 @@ struct ContentView: View {
 
     var body: some View {
         RulerView()
+//        GyroTestView()
             .environment(\.screenConversions, .device ?? .zero)
     }
 }

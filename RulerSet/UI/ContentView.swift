@@ -7,8 +7,27 @@ struct ContentView: View {
     let pointsPerCm = UIScreen.pointsPerCentimeter ?? 200
 
     var body: some View {
-        RulerView()
-            .environment(\.screenConversions, .device ?? .zero)
+        NavigationStack {
+            List {
+                NavigationLink("Ruler", value: Page.ruler)
+                NavigationLink("Protractor", value: Page.protractor)
+                NavigationLink("Level", value: Page.level)
+            }
+            .navigationDestination(for: Page.self) { page in
+                switch page {
+                case .ruler: RulerView()
+                case .protractor: ProtractorView()
+                case .level: LevelView()
+                }
+            }
+        }
+        .environment(\.screenConversions, .device ?? .zero)
+    }
+
+    enum Page {
+        case ruler
+        case protractor
+        case level
     }
 }
 

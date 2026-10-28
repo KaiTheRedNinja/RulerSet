@@ -23,9 +23,9 @@ struct LevelView: View {
                 Spacer()
                     .frame(height: 50)
 
-                LevelIndicatorView(degrees: motion.attitude.pitch * 180 / .pi)
+                LevelIndicatorView(degrees: -motion.attitude.pitch * 180 / .pi)
                     .frame(height: 180 * 2)
-                    .rotationEffect(.degrees(90))
+                    .rotationEffect(.degrees(-90))
             } else {
                 Text("starting up...")
             }
@@ -42,9 +42,14 @@ struct LevelView: View {
 struct LevelIndicatorView: View {
     var degrees: CGFloat
 
+    // The width of the dial
+    var visibleWidth: CGFloat = 350
+    // The degrees visible on the dial. Do not set higher than 180.
+    var visibleDegrees: CGFloat = 150
+
     var body: some View {
         let degAdj: CGFloat = (degrees + 360).truncatingRemainder(dividingBy: 360) // degrees but made positive
-        let radius: CGFloat = 180
+        let radius: CGFloat = visibleWidth / (2 * sin(visibleDegrees/2 * .pi / 180))
         let thickness: CGFloat = 80
 
         ZStack {
@@ -55,6 +60,8 @@ struct LevelIndicatorView: View {
                 .frame(width: radius * 2, height: thickness)
                 .blur(radius: 10)
 
+            let edgeRadius: CGFloat = 10
+
             ZStack {
                 Rectangle()
                     .fill(
@@ -64,24 +71,73 @@ struct LevelIndicatorView: View {
                             endPoint: .trailing
                         )
                     )
-                    .frame(width: radius*2, height: thickness)
+                    .overlay {
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    stops: [
+                                        .init(color: Color(white: 0.35), location: 0),
+                                        .init(color: Color(white: 0.4, opacity: 0.5), location: 0.2),
+                                        .init(color: Color.clear, location: 0.4),
+                                        .init(color: Color.clear, location: 0.6),
+                                        .init(color: Color(white: 0.4, opacity: 0.5), location: 0.8),
+                                        .init(color: Color(white: 0.35), location: 1),
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                    }
+                    .frame(width: visibleWidth, height: thickness)
+
+                Path { path in
+                    for indicator in 0..<360 {
+                        let rotation = (CGFloat(indicator) - degAdj + 360.0).truncatingRemainder(dividingBy: 360)
+                        let rotRad = rotation * .pi / 180
+                        // ignore if not visible
+                        guard rotation < (visibleDegrees / 2) || rotation > 360 - (visibleDegrees/2) else { continue }
+
+                        print(rotation)
+
+                        // draw the line
+                        let tickerWidth: CGFloat = if indicator%10 == 0 { 20 }
+                        else if indicator%5 == 0 { 10 }
+                        else { 6 }
+
+                        if tickerWidth == 6 {
+                            path.move(to: .init(x: visibleWidth/2 + (radius - edgeRadius) * sin(rotRad), y: 0))
+                            path.addQuadCurve(
+                                to: .init(x: visibleWidth/2 + radius * sin(rotRad), y: tickerWidth),
+                                control: .init(x: visibleWidth/2 + radius * sin(rotRad), y: 0)
+                            )
+
+                            path.move(to: .init(x: visibleWidth/2 + radius * sin(rotRad), y: thickness - tickerWidth))
+                            path.addQuadCurve(
+                                to: .init(x: visibleWidth/2 + (radius - edgeRadius) * sin(rotRad), y: thickness),
+                                control: .init(x: visibleWidth/2 + radius * sin(rotRad), y: thickness)
+                            )
+                        } else {
+                            path.move(to: .init(x: visibleWidth/2 + (radius - edgeRadius) * sin(rotRad), y: 0))
+                            path.addQuadCurve(
+                                to: .init(x: visibleWidth/2 + radius * sin(rotRad), y: edgeRadius),
+                                control: .init(x: visibleWidth/2 + radius * sin(rotRad), y: 0)
+                            )
+                            path.addLine(to: .init(x: visibleWidth/2 + radius * sin(rotRad), y: tickerWidth))
+
+                            path.move(to: .init(x: visibleWidth/2 + radius * sin(rotRad), y: thickness - tickerWidth))
+                            path.addLine(to: .init(x: visibleWidth/2 + radius * sin(rotRad), y: thickness - edgeRadius))
+                            path.addQuadCurve(
+                                to: .init(x: visibleWidth/2 + (radius - edgeRadius) * sin(rotRad), y: thickness),
+                                control: .init(x: visibleWidth/2 + radius * sin(rotRad), y: thickness)
+                            )
+                        }
+                    }
+                }
+                .stroke(Color.black, lineWidth: 1)
 
                 ForEach(0..<36) { indicator in // ignore 360 degrees, because thats 0
                     let rotation = (CGFloat(indicator) * 10 - degAdj + 360.0).truncatingRemainder(dividingBy: 360)
-                    if rotation < 90.0 || rotation > 270.0 {
-                        VStack {
-                            Rectangle()
-                                .fill(Color.black)
-                                .frame(width: 1, height: 10)
-                                .offset(x: radius * sin(rotation * .pi / 180))
-
-                            Spacer()
-
-                            Rectangle()
-                                .fill(Color.black)
-                                .frame(width: 1, height: 10)
-                                .offset(x: radius * sin(rotation * .pi / 180))
-                        }
+                    if rotation < (visibleDegrees / 2) || rotation > 360 - (visibleDegrees/2) {
 
                         Text("\(indicator * 10)")
                             .monospaced()
@@ -90,18 +146,31 @@ struct LevelIndicatorView: View {
                     }
                 }
             }
-            .frame(height: thickness)
+            .clipShape(RoundedRectangle(cornerRadius: edgeRadius))
+            .frame(width: visibleWidth, height: thickness)
 
             RoundedRectangle(cornerRadius: 10)
-                .fill(.regularMaterial)
-                .stroke(Color.blue, lineWidth: 3)
-                .overlay {
-                    Text(String(format: "%03.1f", degAdj))
-                        .frame(width: 100)
-                        .rotationEffect(.degrees(90))
-                        .monospaced()
+                .fill(.thinMaterial)
+                .stroke(Color.primary, lineWidth: 1)
+                .shadow(radius: 10)
+                .reverseMask(clearance: 50) {
+                    RoundedRectangle(cornerRadius: 5)
+                        .frame(width: thickness * 1/1.6 - 20, height: thickness - 20)
                 }
-                .frame(width: thickness * 1/1.6, height: thickness)
+                .overlay {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 5)
+                            .stroke(Color.primary, lineWidth: 1)
+                        Text(String(format: "%03.1f", degAdj))
+                            .frame(width: 100)
+                            .rotationEffect(.degrees(90))
+                            .monospaced()
+                            .frame(width: thickness * 1/1.6 - 20, height: thickness - 20)
+                            .glassEffect(.clear.tint(Color(white: 0.6)), in: .rect(cornerRadius: 5.0))
+                    }
+                    .frame(width: thickness * 1/1.6 - 20, height: thickness - 20)
+                }
+                .frame(width: thickness * 1/1.6, height: thickness + 20)
         }
     }
 }

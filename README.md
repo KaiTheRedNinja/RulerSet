@@ -5,15 +5,13 @@ I have often needed a measuring tape, without having one nearby. The built in Me
 I plan to create a measurement app that does NOT rely on the camera, and instead uses user input on the screen itself to measure items.
 
 ## Feature Plan
-- [ ] Simple ruler
-- [ ] Simple protractor
+- [x] Simple ruler, incl. right-angle
+- [x] Simple protractor
 - [ ] Simple level
-- [ ] Tape measure using accelerometer
-  - [ ] Measure accelerometer movement
-  - [ ] Integrate accelerometer movement to obtain displacement
-- [ ] Angle measurement using gyroscope
+- [ ] Differential angle measurement using gyroscope
+- [ ] 3-axis angle measurements
 - [ ] Inches-cm-mm setting
-- [ ] Skeuomorphic UI
+- [ ] Skeuomorphic starting UI
 
 ## Change in Plan
 Originally, I had planned to use the phone's accelerometer to measure displacement. However, I discovered through experimentation that the iPhone's accelerometer has an error of about 0.001g, with noise of about 0.0005g. 

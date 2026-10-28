@@ -16,13 +16,13 @@ class RotationManager {
     var motionTracking: Bool = false
     var currentMotion: CMDeviceMotion?
 
-    func startDeviceMotion() {
+    func startDeviceMotion(frequency: CGFloat = 120.0) {
         guard motion.isDeviceMotionAvailable else {
             print("Device motion not available")
             return
         }
 
-        motion.deviceMotionUpdateInterval = 1.0 / 120.0 // attempt to get 120Hz updates
+        motion.deviceMotionUpdateInterval = 1.0 / frequency // attempt to get 120Hz updates
         motion.showsDeviceMovementDisplay = true
 
         motion.startDeviceMotionUpdates(using: .xArbitraryZVertical, to: .main) { [weak self] update, error in

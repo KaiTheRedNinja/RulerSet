@@ -27,99 +27,126 @@ struct ProtractorView: View {
                 Int(sizePts.width / screen.pointsPerCentimeter)
             )
 
+            // the protractor is made of several radii, with lines in between:
+            // radiusPts
+            //    |
+            // tickRadius (defined per-tick)
+            //
+            // labelRadius (where the ticks stop and labels start - no lines here really)
+            //
+            // decoratorRadius
+            //    |
+            // cutoffRadius OR innerTickRadius for non-5-divisible ticks
+            let radiusPts = CGFloat(radiusCm) * screen.pointsPerCentimeter
+            let decoratorRadius = radiusPts - 1.8 * screen.pointsPerCentimeter
+            let labelRadius = radiusPts - 0.55 * screen.pointsPerCentimeter
+            let innerTickRadius = decoratorRadius - 0.2 * screen.pointsPerCentimeter
+            let cutoffRadius = 0.5 * screen.pointsPerCentimeter
+
+            // background
+            ZStack {
+                Circle()
+                    .fill(Color.blue.opacity(0.3))
+
+                Circle()
+                    .fill(Color.blue.opacity(0.3))
+                    .padding(radiusPts - labelRadius)
+            }
+            .frame(width: radiusPts * 2, height: radiusPts * 2)
+            .padding(.leading, -radiusPts)
+
             // tickers
             Path { path in
-                let radiusPts = CGFloat(radiusCm) * screen.pointsPerCentimeter
-
                 let centerPoint = CGPoint(x: 0, y: sizePts.height/2)
 
-                // TODO: redo these to look like protractors
                 for degree in 0...180 {
-                    let tickWidth: CGFloat = if degree == 0 { 0.5 } // zero is at 0.5 to allow for crossing
-                    else if degree%10 == 0 { 0.8 }
-                    else if degree%5 == 0 { 0.5 }
-                    else { 0.3 }
+                    let tickWidth: CGFloat = if degree%10 == 0 { 0.55 }
+                    else if degree%5 == 0 { 0.45 }
+                    else { 0.35 }
 
-                    let radian = CGFloat(degree) * (2 * .pi) / 180
+                    let radian = CGFloat(degree) * (.pi / 180)
 
-                    let innerRadius = radiusPts - tickWidth * screen.pointsPerCentimeter
+                    let tickRadius = radiusPts - tickWidth * screen.pointsPerCentimeter
 
-                    let endPoint = CGPoint(
+                    let startPoint1 = CGPoint(
                         x: centerPoint.x + radiusPts * sin(radian),
                         y: centerPoint.y + radiusPts * cos(radian)
                     )
-                    let startPoint = CGPoint(
-                        x: centerPoint.x + innerRadius * sin(radian),
-                        y: centerPoint.y + innerRadius * cos(radian)
+                    let endPoint1 = CGPoint(
+                        x: centerPoint.x + tickRadius * sin(radian),
+                        y: centerPoint.y + tickRadius * cos(radian)
                     )
 
-                    path.move(to: startPoint)
-                    path.addLine(to: endPoint)
+                    path.move(to: startPoint1)
+                    path.addLine(to: endPoint1)
+
+                    let startPoint2 = CGPoint(
+                        x: centerPoint.x + decoratorRadius * sin(radian),
+                        y: centerPoint.y + decoratorRadius * cos(radian)
+                    )
+                    let endPoint2 = CGPoint(
+                        x: centerPoint.x + (degree%5 == 0 ? cutoffRadius : innerTickRadius) * sin(radian),
+                        y: centerPoint.y + (degree%5 == 0 ? cutoffRadius : innerTickRadius) * cos(radian)
+                    )
+
+                    path.move(to: startPoint2)
+                    path.addLine(to: endPoint2)
                 }
+
+                // separator arcs
+                path.addArc(
+                    center: centerPoint,
+                    radius: radiusPts - 0.35 * screen.pointsPerCentimeter,
+                    startAngle: .degrees(90),
+                    endAngle: .degrees(-90),
+                    clockwise: true
+                )
+                path.addArc(
+                    center: centerPoint,
+                    radius: decoratorRadius,
+                    startAngle: .degrees(90),
+                    endAngle: .degrees(-90),
+                    clockwise: true
+                )
+                path.addArc(
+                    center: centerPoint,
+                    radius: cutoffRadius,
+                    startAngle: .degrees(90),
+                    endAngle: .degrees(-90),
+                    clockwise: true
+                )
+                path.move(to: centerPoint)
+                path.addLine(to: .init(x: centerPoint.x + cutoffRadius, y: centerPoint.y))
             }
-            .stroke(Color.primary, lineWidth: 2)
+            .stroke(Color.primary, lineWidth: 1)
 
             // labels
-//            ForEach(0..<(heightCm + 1), id: \.self) { cm in
-//                Text("\(cm)")
-//                    .rotationEffect(.degrees(90))
-//                    .offsetCm(screen: screen, x: 0.6, y: 0.5 + CGFloat(cm))
-//                    .offsetCm(screen: screen, y: cm == heightCm ? -0.4 : 0)
-//            }
-//
-//            ForEach(1..<(widthCm + 1), id: \.self) { cm in
-//                Text("\(cm)")
-//                    .rotationEffect(.degrees(180))
-//                    .offsetCm(screen: screen, x: 0.5 + 0.1 + CGFloat(cm), y: 0.4)
-//                    .offsetCm(screen: screen, x: cm == widthCm ? -0.4 : 0)
-//            }
+            ZStack(alignment: .leading) {
+                ForEach(0..<(18+1)) { index in
+                    let degree = CGFloat(index) * 10
+                    VStack {
+                        if index != 9 {
+                            VStack {
+                                Text("\(index * 10)") // note: this is an integer
+                                Spacer()
+                                Text("\(180 - index * 10)")
+                            }
+                            .padding(5)
+                            .frame(height: labelRadius - decoratorRadius)
+                        } else {
+                            Text("90")
+                                .font(.title)
+                                .frame(height: labelRadius - decoratorRadius)
+                        }
+                        Spacer()
+                    }
+                    .frame(width: 50, height: 2*(radiusPts - 0.55 * screen.pointsPerCentimeter))
+                    .rotationEffect(.degrees(degree), anchor: .center)
+                    .padding(.leading, -25)
+                }
+            }
         }
     }
-
-//    func rulerBackground(sizePts: CGSize) -> some View {
-//        let offsetPts = 0.5 * screen.pointsPerCentimeter
-//
-//        let heightCm = Int(sizePts.height / screen.pointsPerCentimeter)
-//        let widthCm = Int(sizePts.width / screen.pointsPerCentimeter)
-//
-//        // background
-//        let offsetWidth = CGFloat(widthCm) * screen.pointsPerCentimeter + offsetPts
-//        let offsetHeight = CGFloat(heightCm) * screen.pointsPerCentimeter + offsetPts
-//
-//        let tickerSize = 0.8 * screen.pointsPerCentimeter
-//        let extraWidth = ((tickerSize * offsetWidth) - (tickerSize * tickerSize))/(offsetHeight - tickerSize)
-//        let extraHeight = ((tickerSize * offsetHeight) - (tickerSize * tickerSize))/(offsetWidth - tickerSize)
-//
-//        let totWidthPt = offsetWidth + extraWidth
-//        let totHeightPt = offsetHeight + extraHeight
-//
-//        func drawInset(insetCm: CGFloat) -> Path {
-//            var path = Path()
-//            // draw a smaller inner triangle, offset in all directions by 1.5cm
-//            let inset = insetCm * screen.pointsPerCentimeter
-//            let scale = (totWidthPt - inset * 2.7) / totWidthPt
-//            // note: we could do smth with trig, but i'm not bothered so we'll treat the diagonal inset as 1.7x the horizontal instead.
-//
-//            path.move(to: .init(x: inset, y: inset))
-//            path.addLine(to: .init(x: inset + totWidthPt * scale, y: inset))
-//            path.addLine(to: .init(x: inset, y: inset + totHeightPt * scale))
-//            path.addLine(to: .init(x: inset, y: inset))
-//            path.closeSubpath()
-//
-//            return path
-//        }
-//
-//        return ZStack(alignment: .topLeading) {
-//            drawInset(insetCm: 0)
-//                .fill(Color.blue.opacity(0.3))
-//            drawInset(insetCm: 0.5)
-//                .fill(Color.blue.opacity(0.3))
-//        }
-//        .reverseMask(clearance: 30) {
-//            drawInset(insetCm: 1.5)
-//                .fill(Color.white)
-//        }
-//    }
 }
 
 #Preview {

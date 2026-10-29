@@ -7,7 +7,7 @@ I plan to create a measurement app that does NOT rely on the camera, and instead
 ## Feature Plan
 - [x] Simple ruler, incl. right-angle
 - [x] Simple protractor
-- [ ] Simple level
+- [x] Simple level
 - [ ] Differential angle measurement using gyroscope
 - [ ] 3-axis angle measurements
 - [ ] Inches-cm-mm setting

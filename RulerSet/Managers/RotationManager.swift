@@ -15,6 +15,20 @@ class RotationManager {
 
     var motionTracking: Bool = false
     var currentMotion: CMDeviceMotion?
+    var referenceAttitude: CMAttitude?
+
+    var processedAttitude: ProcessedAttitude? {
+        guard let pitch = currentMotion?.attitude.pitch,
+              let roll = currentMotion?.attitude.roll,
+              let yaw = currentMotion?.attitude.yaw
+        else { return nil }
+
+        return .init(
+            pitch: pitch - (referenceAttitude?.pitch ?? 0),
+            roll: roll - (referenceAttitude?.roll ?? 0),
+            yaw: yaw - (referenceAttitude?.yaw ?? 0)
+        )
+    }
 
     func startDeviceMotion(frequency: CGFloat = 120.0) {
         guard motion.isDeviceMotionAvailable else {
@@ -40,6 +54,10 @@ class RotationManager {
         }
     }
 
+    func tare() {
+        referenceAttitude = currentMotion?.attitude
+    }
+
     func stopDeviceMotion() {
         motion.stopDeviceMotionUpdates()
     }
@@ -47,4 +65,10 @@ class RotationManager {
     deinit {
         stopDeviceMotion()
     }
+}
+
+struct ProcessedAttitude {
+    var pitch: CGFloat
+    var roll: CGFloat
+    var yaw: CGFloat
 }

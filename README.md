@@ -8,8 +8,9 @@ I plan to create a measurement app that does NOT rely on the camera, and instead
 - [x] Simple ruler, incl. right-angle
 - [x] Simple protractor
 - [x] Simple level
+- [ ] Simple pull-based measurement tape
 - [ ] Differential angle measurement using gyroscope
-- [ ] 3-axis angle measurements
+- [x] 3-axis angle measurements
 - [ ] Inches-cm-mm setting
 - [ ] Skeuomorphic starting UI
 

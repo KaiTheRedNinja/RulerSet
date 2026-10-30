@@ -16,16 +16,38 @@ struct TapeMeasureView: View {
 
     let tapeWidthCm: CGFloat = 1.8
 
+    @State var measuredLengthCm: CGFloat = 0
+
+    @State var lastMeasuredLengthCm: CGFloat = 0
+
     var body: some View {
         GeometryReader { geom in
             VStack(spacing: 0) {
                 bodyView(size: geom.size)
-
                 tapeView(size: geom.size)
             }
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .ignoresSafeArea(.all, edges: .vertical)
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { value in
+                    let newLength = lastMeasuredLengthCm + value.translation.height / screen.pointsPerCentimeter
+                    measuredLengthCm = overScroll(newLength)
+                }
+                .onEnded { value in
+                    let newLength = lastMeasuredLengthCm + value.translation.height / screen.pointsPerCentimeter
+                    measuredLengthCm = overScroll(newLength)
+                    lastMeasuredLengthCm = measuredLengthCm
+
+                    if newLength < 0 {
+                        withAnimation(.bouncy(duration: 0.2, extraBounce: 0.2)) {
+                            measuredLengthCm = 0
+                            lastMeasuredLengthCm = 0
+                        }
+                    }
+                }
+        )
     }
 
     @ViewBuilder
@@ -47,40 +69,28 @@ struct TapeMeasureView: View {
             - (bodyLengthCm - bodyHiddenCm) * screen.pointsPerCentimeter
         let tapeLengthCm: CGFloat = tapeLengthPts / screen.pointsPerCentimeter
 
+        let measuredPts: CGFloat = measuredLengthCm * screen.pointsPerCentimeter
+
         ZStack(alignment: .bottom) {
             Rectangle()
                 .fill(Color.yellow)
+                .padding(.bottom, -min(0, measuredPts))
 
             // tickers
-            Path { path in
-                // note: we start from the bottom
-                // and also skip the first line bc thats not visible anyways
-                for mmIndex in 1..<Int(tapeLengthCm * 10 + 1) {
-                    let cm = CGFloat(mmIndex) / 10
-                    let cmPts = cm * screen.pointsPerCentimeter
-
-                    let tickWidth: CGFloat = if mmIndex%10 == 0 { 0.9 }
-                    else if mmIndex%5 == 0 { 0.5 }
-                    else { 0.3 }
-
-                    path.move(
-                        to: .init(
-                            x: tapeWidthPts,
-                            y: tapeLengthPts - cmPts
-                        )
-                    )
-                    path.addLine(
-                        to: .init(
-                            x: (tapeWidthCm - tickWidth) * screen.pointsPerCentimeter,
-                            y: tapeLengthPts - cmPts
-                        )
-                    )
-                }
-            }
-            .stroke(Color.primary, lineWidth: 1)
+            TapeTickers(
+                tapeLengthPts: tapeLengthPts,
+                tapeLengthCm: tapeLengthCm,
+                tapeWidthPts: tapeWidthPts,
+                tapeWidthCm: tapeWidthCm,
+                measuredLengthCm: $measuredLengthCm
+            )
 
             // numbers
-            ForEach(1..<Int(tapeLengthCm+1), id: \.self) { index in
+            let startIndex = max(0, Int(measuredLengthCm-1))
+            let endIndex = Int(tapeLengthCm+measuredLengthCm+1)
+            ForEach(startIndex..<endIndex, id: \.self) { index in
+                let yOffset = -CGFloat(index) * screen.pointsPerCentimeter + measuredPts
+
                 HStack {
                     Spacer()
                         .frame(maxWidth: .infinity)
@@ -94,7 +104,7 @@ struct TapeMeasureView: View {
                 .minimumScaleFactor(0.5)
                 .monospaced()
                 .frame(width: tapeWidthPts, height: 1 * screen.pointsPerCentimeter, alignment: .topTrailing)
-                .offset(y: -CGFloat(index-1) * screen.pointsPerCentimeter)
+                .offset(y: yOffset + screen.pointsPerCentimeter)
             }
 
             // tab at the bottom
@@ -141,7 +151,9 @@ struct TapeMeasureView: View {
             }
             .shadow(radius: 10)
             .frame(width: tapeWidthPts, height: 60)
+            .offset(y: measuredPts)
         }
+        .clipped()
         .frame(
             width: tapeWidthPts,
             height: tapeLengthPts
@@ -149,9 +161,74 @@ struct TapeMeasureView: View {
     }
 }
 
+@Animatable
+struct TapeTickers: View {
+    @AnimatableIgnored
+    @Environment(\.screenConversions) var screen
+
+    var tapeLengthPts: CGFloat
+    var tapeLengthCm: CGFloat
+    var tapeWidthPts: CGFloat
+    var tapeWidthCm: CGFloat
+    @Binding var measuredLengthCm: CGFloat
+
+    var body: some View {
+        // tickers
+        Path { path in
+            // we only render the ones that are visible
+            // those are from measuredLengthCm to measuredLengthCm + tapeLengthCm
+
+            // note: we start from the bottom
+            // and also skip the first line bc thats not visible anyways
+            let startIndex = max(1, Int(measuredLengthCm * 10 + 1))
+            let endIndex = Int((tapeLengthCm + measuredLengthCm) * 10 + 1)
+
+            for mmIndex in startIndex..<endIndex {
+                let cm = CGFloat(mmIndex) / 10 - measuredLengthCm
+
+                // dont bother with rendering those out of view
+                if cm <= 0 || cm > tapeLengthCm { continue }
+
+                let cmPts = cm * screen.pointsPerCentimeter
+
+                let tickWidth: CGFloat = if mmIndex%10 == 0 { 0.9 }
+                else if mmIndex%5 == 0 { 0.5 }
+                else { 0.3 }
+
+                path.move(
+                    to: .init(
+                        x: tapeWidthPts,
+                        y: tapeLengthPts - cmPts
+                    )
+                )
+                path.addLine(
+                    to: .init(
+                        x: (tapeWidthCm - tickWidth) * screen.pointsPerCentimeter,
+                        y: tapeLengthPts - cmPts
+                    )
+                )
+            }
+        }
+        .stroke(Color.primary, lineWidth: 1)
+    }
+}
+
+func overScroll(_ x: CGFloat) -> CGFloat {
+    guard x < 0 else { return x }
+
+    let resistance: CGFloat = 0.5
+    let limit: CGFloat = 120
+
+    return -limit * (1 - exp(x * resistance / limit))
+}
+
 #Preview {
-    TapeMeasureView()
-        .border(Color.red, width: 1)
-        .padding(30)
-        .environment(\.screenConversions, .device ?? .zero)
+    @Previewable @State var lengthOffsetPts: CGFloat = 0
+
+    VStack {
+        TapeMeasureView()
+            .border(Color.red, width: 1)
+            .padding(30)
+            .environment(\.screenConversions, .device ?? .zero)
+    }
 }

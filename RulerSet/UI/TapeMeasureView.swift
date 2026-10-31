@@ -60,6 +60,13 @@ struct TapeMeasureView: View {
             )
             .clipShape(RoundedRectangle(cornerRadius: 10))
             .padding(.top, -bodyHiddenCm * screen.pointsPerCentimeter)
+            .onTapGesture {
+                // zero
+                withAnimation(.bouncy(duration: 0.2, extraBounce: 0.2)) {
+                    measuredLengthCm = 0
+                    lastMeasuredLengthCm = 0
+                }
+            }
     }
 
     @ViewBuilder
@@ -72,40 +79,21 @@ struct TapeMeasureView: View {
         let measuredPts: CGFloat = measuredLengthCm * screen.pointsPerCentimeter
 
         ZStack(alignment: .bottom) {
-            Rectangle()
-                .fill(Color.yellow)
-                .padding(.bottom, -min(0, measuredPts))
-
             // tickers
             TapeTickers(
                 tapeLengthPts: tapeLengthPts,
                 tapeLengthCm: tapeLengthCm,
                 tapeWidthPts: tapeWidthPts,
                 tapeWidthCm: tapeWidthCm,
-                measuredLengthCm: $measuredLengthCm
+                measuredLengthCm: measuredLengthCm
             )
 
             // numbers
-            let startIndex = max(0, Int(measuredLengthCm-1))
-            let endIndex = Int(tapeLengthCm+measuredLengthCm+1)
-            ForEach(startIndex..<endIndex, id: \.self) { index in
-                let yOffset = -CGFloat(index) * screen.pointsPerCentimeter + measuredPts
-
-                HStack {
-                    Spacer()
-                        .frame(maxWidth: .infinity)
-                    Text("\(index)")
-                        .lineLimit(1)
-                        .padding(.leading, 5)
-                        .rotationEffect(.degrees(-90), anchor: .topLeading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .font(.title3)
-                .minimumScaleFactor(0.5)
-                .monospaced()
-                .frame(width: tapeWidthPts, height: 1 * screen.pointsPerCentimeter, alignment: .topTrailing)
-                .offset(y: yOffset + screen.pointsPerCentimeter)
-            }
+            TapeNumbers(
+                tapeWidthPts: tapeWidthPts,
+                tapeLengthCm: tapeLengthCm,
+                measuredLengthCm: measuredLengthCm
+            )
 
             // tab at the bottom
             Path { path in
@@ -161,18 +149,24 @@ struct TapeMeasureView: View {
     }
 }
 
-@Animatable
-struct TapeTickers: View {
-    @AnimatableIgnored
+struct TapeTickers: View, Animatable {
     @Environment(\.screenConversions) var screen
 
     var tapeLengthPts: CGFloat
     var tapeLengthCm: CGFloat
     var tapeWidthPts: CGFloat
     var tapeWidthCm: CGFloat
-    @Binding var measuredLengthCm: CGFloat
+    var measuredLengthCm: CGFloat
+
+    var animatableData: CGFloat { get { measuredLengthCm } set { measuredLengthCm = newValue } }
 
     var body: some View {
+        let measuredPts: CGFloat = measuredLengthCm * screen.pointsPerCentimeter
+
+        Rectangle()
+            .fill(Color.yellow)
+            .padding(.bottom, -min(0, measuredPts))
+
         // tickers
         Path { path in
             // we only render the ones that are visible
@@ -210,6 +204,44 @@ struct TapeTickers: View {
             }
         }
         .stroke(Color.primary, lineWidth: 1)
+    }
+}
+
+struct TapeNumbers: View, Animatable {
+    @Environment(\.screenConversions) var screen
+
+    var tapeWidthPts: CGFloat
+    var tapeLengthCm: CGFloat
+    var measuredLengthCm: CGFloat
+
+    var animatableData: CGFloat { get { measuredLengthCm } set { measuredLengthCm = newValue } }
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            let startIndex = max(0, Int(measuredLengthCm-1))
+            let endIndex = Int(tapeLengthCm+measuredLengthCm+1)
+
+            let measuredPts: CGFloat = measuredLengthCm * screen.pointsPerCentimeter
+
+            ForEach(startIndex..<endIndex, id: \.self) { index in
+                let yOffset = -CGFloat(index) * screen.pointsPerCentimeter + measuredPts
+
+                HStack {
+                    Spacer()
+                        .frame(maxWidth: .infinity)
+                    Text("\(index)")
+                        .lineLimit(1)
+                        .padding(.leading, 5)
+                        .rotationEffect(.degrees(-90), anchor: .topLeading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .font(.title3)
+                .minimumScaleFactor(0.5)
+                .monospaced()
+                .frame(width: tapeWidthPts, height: 1 * screen.pointsPerCentimeter, alignment: .topTrailing)
+                .offset(y: yOffset + screen.pointsPerCentimeter)
+            }
+        }
     }
 }
 

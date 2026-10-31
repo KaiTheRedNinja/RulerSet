@@ -12,7 +12,7 @@ struct TapeMeasureView: View {
 
     let bodyLengthCm: CGFloat = 6.5
     let bodyWidthCm: CGFloat = 2.8
-    let bodyHiddenCm: CGFloat = 4.0
+    let bodyHiddenCm: CGFloat = 3.5
 
     let tapeWidthCm: CGFloat = 1.8
 
@@ -52,28 +52,157 @@ struct TapeMeasureView: View {
 
     @ViewBuilder
     func bodyView(size: CGSize) -> some View {
-        Rectangle()
-            .fill(Color.gray)
-            .frame(
-                width: bodyWidthCm * screen.pointsPerCentimeter,
-                height: bodyLengthCm * screen.pointsPerCentimeter
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .padding(.top, -bodyHiddenCm * screen.pointsPerCentimeter)
-            .onTapGesture {
-                // zero
-                withAnimation(.bouncy(duration: 0.2, extraBounce: 0.2)) {
-                    measuredLengthCm = 0
-                    lastMeasuredLengthCm = 0
+        let cornerRadius: CGFloat = 30
+
+        let bodyLengthPts: CGFloat = bodyLengthCm * screen.pointsPerCentimeter
+        let bodyWidthPts: CGFloat = bodyWidthCm * screen.pointsPerCentimeter
+
+        ZStack {
+            // main body
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [Color.init(white: 0.2), Color.init(white: 0.6), Color.init(white: 0.4)],
+                        startPoint: .bottom,
+                        endPoint: .top
+                    )
+                )
+
+            // shading
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        stops: [
+                            .init(color: Color(white: 0.35), location: 0),
+                            .init(color: Color(white: 0.4, opacity: 0.5), location: 0.1),
+                            .init(color: Color.clear, location: 0.4),
+                            .init(color: Color.clear, location: 0.6),
+                            .init(color: Color(white: 0.4, opacity: 0.5), location: 0.9),
+                            .init(color: Color(white: 0.35), location: 1),
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+
+            // patterns
+            Path { path in
+                let radius = bodyLengthPts/2
+                let midpointLeft = CGPoint(x: 0, y: radius)
+                let midpointRight = CGPoint(x: bodyWidthPts, y: radius)
+
+                // the number of features visible within 180 degrees
+                let visibleCount = 14
+                // the angle between features
+                let segmentOffsetDeg = 180.0 / CGFloat(visibleCount)
+                // the angular length of the feature
+                let segmentLengthDeg = segmentOffsetDeg * 3/5
+                // the length of the feature in points, when seen straight-on
+                let segmentLengthPts = radius * segmentLengthDeg * .pi / 180
+                // the corner radius of the feature
+                let segmentCornerRadius = segmentLengthPts/2
+                // the width of the feature
+                let segmentWidthPts = bodyWidthPts/3
+
+                for index in 0..<visibleCount {
+                    let startDeg = segmentOffsetDeg * CGFloat(index)
+                    let endDeg = startDeg + segmentLengthDeg
+                    let midDeg = (startDeg + endDeg)/2
+
+                    let startPoint = CGPoint(x: midpointLeft.x, y: midpointLeft.y + radius * cos(startDeg * .pi / 180))
+                    let midPoint = CGPoint(x: midpointLeft.x, y: midpointLeft.y + radius * cos(midDeg * .pi / 180))
+                    let endPoint = CGPoint(x: midpointLeft.x, y: midpointLeft.y + radius * cos(endDeg * .pi / 180))
+
+                    // edge curve
+                    path.move(to: .init(x: midpointLeft.x, y: midpointLeft.y + (radius - segmentCornerRadius) * cos(startDeg * .pi / 180)))
+                    path.addQuadCurve(
+                        to: .init(x: midpointLeft.x + segmentCornerRadius, y: startPoint.y),
+                        control: startPoint
+                    )
+                    // top line
+                    path.addLine(
+                        to: .init(
+                            x: midpointLeft.x + bodyWidthPts/3 - segmentCornerRadius,
+                            y: startPoint.y
+                        )
+                    )
+                    // inner main curve
+                    path.addQuadCurve(
+                        to: .init(x: midpointLeft.x + bodyWidthPts/3, y: midPoint.y),
+                        control: .init(x: midpointLeft.x + bodyWidthPts/3, y: startPoint.y)
+                    )
+                    path.addQuadCurve(
+                        to: .init(x: midpointLeft.x + bodyWidthPts/3 - segmentCornerRadius, y: endPoint.y),
+                        control: .init(x: midpointLeft.x + bodyWidthPts/3, y: endPoint.y)
+                    )
+                    // bottom line
+                    path.addLine(to: .init(x: midpointLeft.x + segmentCornerRadius, y: endPoint.y))
+                    path.addQuadCurve(
+                        to: .init(x: midpointLeft.x, y: midpointLeft.y + (radius - segmentCornerRadius) * cos(endDeg * .pi / 180)),
+                        control: endPoint
+                    )
+
+                    // repeat on the other side
+
+                    // edge curve
+                    path.move(to: .init(x: midpointRight.x, y: midpointRight.y + (radius - segmentCornerRadius) * cos(startDeg * .pi / 180)))
+                    path.addQuadCurve(
+                        to: .init(x: midpointRight.x - segmentCornerRadius, y: startPoint.y),
+                        control: .init(x: midpointRight.x, y: startPoint.y)
+                    )
+                    // top line
+                    path.addLine(
+                        to: .init(
+                            x: midpointRight.x - bodyWidthPts/3 + segmentCornerRadius,
+                            y: startPoint.y
+                        )
+                    )
+                    // inner main curve
+                    path.addQuadCurve(
+                        to: .init(x: midpointRight.x - bodyWidthPts/3, y: midPoint.y),
+                        control: .init(x: midpointRight.x - bodyWidthPts/3, y: startPoint.y)
+                    )
+                    path.addQuadCurve(
+                        to: .init(x: midpointRight.x - bodyWidthPts/3 + segmentCornerRadius, y: endPoint.y),
+                        control: .init(x: midpointRight.x - bodyWidthPts/3, y: endPoint.y)
+                    )
+                    // bottom line
+                    path.addLine(to: .init(x: midpointRight.x - segmentCornerRadius, y: endPoint.y))
+                    path.addQuadCurve(
+                        to: .init(x: midpointRight.x, y: midpointLeft.y + (radius - segmentCornerRadius) * cos(endDeg * .pi / 180)),
+                        control: .init(x: midpointRight.x, y: endPoint.y)
+                    )
                 }
             }
+            .stroke(Color.black, lineWidth: 1)
+            .fill(
+                LinearGradient(
+                    colors: [Color.init(white: 0.1), Color.init(white: 0.3), Color.init(white: 0.1)],
+                    startPoint: .bottom,
+                    endPoint: .top
+                )
+            )
+        }
+        .frame(
+            width: bodyWidthCm * screen.pointsPerCentimeter,
+            height: bodyLengthCm * screen.pointsPerCentimeter
+        )
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .padding(.top, -bodyHiddenCm * screen.pointsPerCentimeter)
+        .onTapGesture {
+            // zero
+            withAnimation(.bouncy(duration: 0.2, extraBounce: 0.2)) {
+                measuredLengthCm = 0
+                lastMeasuredLengthCm = 0
+            }
+        }
     }
 
     @ViewBuilder
     func tapeView(size: CGSize) -> some View {
         let tapeWidthPts: CGFloat = tapeWidthCm * screen.pointsPerCentimeter
-        let tapeLengthPts: CGFloat = size.height
-            - (bodyLengthCm - bodyHiddenCm) * screen.pointsPerCentimeter
+        let tapeLengthPts: CGFloat = max(0, size.height
+            - (bodyLengthCm - bodyHiddenCm) * screen.pointsPerCentimeter)
         let tapeLengthCm: CGFloat = tapeLengthPts / screen.pointsPerCentimeter
 
         let measuredPts: CGFloat = measuredLengthCm * screen.pointsPerCentimeter
@@ -146,6 +275,38 @@ struct TapeMeasureView: View {
             width: tapeWidthPts,
             height: tapeLengthPts
         )
+        .overlay(alignment: .bottom) {
+            // length labels
+            ZStack(alignment: .bottom) {
+                Text(String(format: "%.2f", measuredLengthCm / 2.54) + " in")
+                    .font(.system(.title3, design: .monospaced))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .rotationEffect(Angle(degrees: -90), anchor: .bottomLeading)
+
+                Text(String(format: "%.2f", measuredLengthCm) + " cm")
+                    .font(.system(.title3, design: .monospaced))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .rotationEffect(.degrees(180), anchor: .center)
+                    .rotationEffect(Angle(degrees: 90), anchor: .bottomTrailing)
+            }
+            .padding(.horizontal, -5)
+            .padding(.bottom, 10)
+            .padding(.bottom, -min(0, measuredPts))
+        }
+        .overlay(alignment: .topTrailing) {
+            // zero indication
+            ZStack {
+                if measuredLengthCm > 0 {
+                    Text("Tap to zero \(Image(systemName: "arrow.up.right"))")
+                        .font(.system(.title3, design: .monospaced))
+                        .frame(width: 500, alignment: .trailing)
+                        .rotationEffect(Angle(degrees: -90), anchor: .topTrailing)
+                }
+            }
+            .padding(.horizontal, -5)
+            .padding(.bottom, 10)
+            .animation(.default, value: measuredLengthCm)
+        }
     }
 }
 

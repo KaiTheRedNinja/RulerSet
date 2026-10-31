@@ -12,12 +12,14 @@ struct ContentView: View {
                 NavigationLink("Ruler", value: Page.ruler)
                 NavigationLink("Protractor", value: Page.protractor)
                 NavigationLink("Level", value: Page.level)
+                NavigationLink("Tape", value: Page.tape)
             }
             .navigationDestination(for: Page.self) { page in
                 switch page {
                 case .ruler: RulerView()
                 case .protractor: ProtractorView()
                 case .level: LevelView()
+                case .tape: TapeMeasureView()
                 }
             }
         }
@@ -28,6 +30,7 @@ struct ContentView: View {
         case ruler
         case protractor
         case level
+        case tape
     }
 }
 

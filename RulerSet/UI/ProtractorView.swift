@@ -140,7 +140,7 @@ struct ProtractorView: View {
                         }
                         Spacer()
                     }
-                    .frame(width: 50, height: 2*(radiusPts - 0.55 * screen.pointsPerCentimeter))
+                    .frame(width: 50, height: max(0, 2*(radiusPts - 0.55 * screen.pointsPerCentimeter)))
                     .rotationEffect(.degrees(degree), anchor: .center)
                     .padding(.leading, -25)
                 }

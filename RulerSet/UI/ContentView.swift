@@ -6,22 +6,21 @@ import UIKit
 struct ContentView: View {
     @Namespace var namespace
 
-    @State var openPage: Page?
-
     var body: some View {
         NavigationStack {
-            switch openPage {
-            case nil:
-                homePage
-            case .ruler:
-                RulerView().matchedGeometryEffect(id: "ruler", in: namespace).toolbar { backButton }
-            case .protractor:
-                ProtractorView().matchedGeometryEffect(id: "protractor", in: namespace).toolbar { backButton }
-            case .level:
-                LevelView().matchedGeometryEffect(id: "level", in: namespace).toolbar { backButton }
-            case .tape:
-                TapeMeasureView().matchedGeometryEffect(id: "tape", in: namespace).toolbar { backButton }
-            }
+            homePage
+                .navigationDestination(for: Page.self) { page in
+                    switch page {
+                    case .ruler:
+                        RulerView().navigationTransition(ZoomNavigationTransition.zoom(sourceID: "ruler", in: namespace))
+                    case .protractor:
+                        ProtractorView().navigationTransition(ZoomNavigationTransition.zoom(sourceID: "protractor", in: namespace))
+                    case .level:
+                        LevelView().navigationTransition(ZoomNavigationTransition.zoom(sourceID: "level", in: namespace))
+                    case .tape:
+                        TapeMeasureView().navigationTransition(ZoomNavigationTransition.zoom(sourceID: "tape", in: namespace))
+                    }
+                }
         }
         .environment(\.screenConversions, .device!)
     }
@@ -37,30 +36,30 @@ struct ContentView: View {
         ZStack {
             Color.white.opacity(0.01) // fill the available space
 
-            Button { withAnimation(.easeInOut) { openPage = Page.ruler } } label: {
+            NavigationLink(value: Page.ruler) {
                 RulerView(allowInteraction: false)
-                    .matchedGeometryEffect(id: "ruler", in: namespace)
+                    .matchedTransitionSource(id: "ruler", in: namespace)
             }
             .scaleEffect(0.6, anchor: .topLeading)
 
-            Button { withAnimation(.easeInOut) { openPage = Page.protractor } } label: {
+            NavigationLink(value: Page.protractor) {
                 ProtractorView() // protractor has no interaction
-                    .matchedGeometryEffect(id: "protractor", in: namespace)
+                    .matchedTransitionSource(id: "protractor", in: namespace)
             }
-            .scaleEffect(x: -1)
+            .rotationEffect(.degrees(180))
             .scaleEffect(0.6, anchor: .bottomTrailing)
             .padding(.bottom, 80)
 
-            Button { withAnimation(.easeInOut) { openPage = Page.level } } label: {
+            NavigationLink(value: Page.level) {
                 LevelView(allowInteraction: false)
-                    .matchedGeometryEffect(id: "level", in: namespace)
+                    .matchedTransitionSource(id: "level", in: namespace)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
             .scaleEffect(0.6, anchor: .bottomLeading)
 
-            Button { withAnimation(.easeInOut) { openPage = Page.tape } } label: {
+            NavigationLink(value: Page.tape) {
                 TapeMeasureView(allowInteraction: false, bodyHiddenCm: 0)
-                    .matchedGeometryEffect(id: "tape", in: namespace)
+                    .matchedTransitionSource(id: "tape", in: namespace)
             }
             .rotationEffect(.degrees(30))
             .scaleEffect(0.6, anchor: .topTrailing)
@@ -68,18 +67,6 @@ struct ContentView: View {
         }
         .clipped()
         .padding(30)
-    }
-
-    var backButton: some ToolbarContent {
-        ToolbarItem(placement: .navigation) {
-            Button {
-                withAnimation {
-                    openPage = nil
-                }
-            } label: {
-                Image(systemName: "chevron.left")
-            }
-        }
     }
 }
 

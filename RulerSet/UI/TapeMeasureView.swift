@@ -331,7 +331,7 @@ struct TapeTickers: View, Animatable {
             .fill(Color.yellow)
             .padding(.bottom, -min(0, measuredPts))
 
-        // tickers
+        // tickers for cm
         Path { path in
             // we only render the ones that are visible
             // those are from measuredLengthCm to measuredLengthCm + tapeLengthCm
@@ -349,7 +349,7 @@ struct TapeTickers: View, Animatable {
 
                 let cmPts = cm * screen.pointsPerCentimeter
 
-                let tickWidth: CGFloat = if mmIndex%10 == 0 { 0.9 }
+                let tickWidth: CGFloat = if mmIndex%10 == 0 { 0.8 }
                 else if mmIndex%5 == 0 { 0.5 }
                 else { 0.3 }
 
@@ -368,6 +368,52 @@ struct TapeTickers: View, Animatable {
             }
         }
         .stroke(Color.primary, lineWidth: 1)
+
+        // tickers for in
+        Path { path in
+            let measuredLengthIn = measuredLengthCm / 2.54
+            let tapeLengthIn = tapeLengthCm / 2.54
+            // we only render the ones that are visible
+            // those are from measuredLengthCm to measuredLengthCm + tapeLengthCm
+
+            // note: we start from the bottom
+            // and also skip the first line bc thats not visible anyways
+            let startIndex = max(1, Int(measuredLengthIn * 32 + 1))
+            let endIndex = Int((tapeLengthIn+measuredLengthIn) * 32 + 1)
+
+            // ts = thirty-second of an inch
+            for tsIndex in startIndex..<endIndex {
+                let inch = CGFloat(tsIndex) / 32 - measuredLengthIn
+
+                // dont bother with rendering those out of view
+                if inch <= 0 || inch > tapeLengthIn { continue }
+
+                let inPts = inch * screen.pointsPerInch
+
+                // NOTE: tick width is still in cm, even for the inches part.
+                let tickWidth: CGFloat = if tsIndex%32 == 0 { 0.8 }
+                else if tsIndex%16 == 0 { 0.7 }
+                else if tsIndex%8 == 0 { 0.6 }
+                else if tsIndex%4 == 0 { 0.5 }
+                else if tsIndex%2 == 0 { 0.4 }
+                else { 0.3 }
+
+                path.move(
+                    to: .init(
+                        x: tapeWidthPts,
+                        y: tapeLengthPts - inPts
+                    )
+                )
+                path.addLine(
+                    to: .init(
+                        x: (tapeWidthCm - tickWidth) * screen.pointsPerCentimeter,
+                        y: tapeLengthPts - inPts
+                    )
+                )
+            }
+        }
+        .stroke(Color.primary, lineWidth: 1)
+        .scaleEffect(x: -1) // flip horizontally
     }
 }
 
@@ -382,29 +428,66 @@ struct TapeNumbers: View, Animatable {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            let startIndex = max(0, Int(measuredLengthCm-1))
-            let endIndex = Int(tapeLengthCm+measuredLengthCm+1)
+            cmPart
 
-            let measuredPts: CGFloat = measuredLengthCm * screen.pointsPerCentimeter
+            inchesPart
+        }
+    }
 
-            ForEach(startIndex..<endIndex, id: \.self) { index in
-                let yOffset = -CGFloat(index) * screen.pointsPerCentimeter + measuredPts
+    @ViewBuilder
+    var cmPart: some View {
+        let startIndex = max(0, Int(measuredLengthCm-1))
+        let endIndex = Int(tapeLengthCm+measuredLengthCm+1)
 
-                HStack {
-                    Spacer()
-                        .frame(maxWidth: .infinity)
-                    Text("\(index)")
-                        .lineLimit(1)
-                        .padding(.leading, 5)
-                        .rotationEffect(.degrees(-90), anchor: .topLeading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .font(.title3)
-                .minimumScaleFactor(0.5)
-                .monospaced()
-                .frame(width: tapeWidthPts, height: 1 * screen.pointsPerCentimeter, alignment: .topTrailing)
-                .offset(y: yOffset + screen.pointsPerCentimeter)
+        let measuredPts: CGFloat = measuredLengthCm * screen.pointsPerCentimeter
+
+        ForEach(startIndex..<endIndex, id: \.self) { index in
+            let yOffset = -CGFloat(index) * screen.pointsPerCentimeter + measuredPts
+
+            HStack {
+                Spacer()
+                    .frame(maxWidth: .infinity)
+                Text("\(index)")
+                    .lineLimit(1)
+                    .padding(.leading, 5)
+                    .rotationEffect(.degrees(-90), anchor: .topLeading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .font(.title3)
+            .minimumScaleFactor(0.5)
+            .monospaced()
+            .frame(width: tapeWidthPts, height: 1 * screen.pointsPerCentimeter, alignment: .topTrailing)
+            .offset(y: yOffset + screen.pointsPerCentimeter)
+        }
+    }
+
+    @ViewBuilder
+    var inchesPart: some View {
+        let measuredLengthIn = measuredLengthCm / 2.54
+        let tapeLengthIn = tapeLengthCm / 2.54
+
+        let startIndex = max(0, Int(measuredLengthIn-1))
+        let endIndex = Int(tapeLengthIn+measuredLengthIn+1)
+
+        let measuredPts: CGFloat = measuredLengthIn * screen.pointsPerInch
+
+        ForEach(startIndex..<endIndex, id: \.self) { index in
+            let yOffset = -CGFloat(index) * screen.pointsPerInch + measuredPts
+
+            HStack {
+                Text("\(index)")
+                    .lineLimit(1)
+                    .padding(.leading, 5)
+                    .rotationEffect(.degrees(-90), anchor: .topLeading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Spacer()
+                    .frame(maxWidth: .infinity)
+            }
+            .font(.title3)
+            .minimumScaleFactor(0.5)
+            .monospaced()
+            .frame(width: tapeWidthPts, height: 1 * screen.pointsPerInch, alignment: .topLeading)
+            .offset(x: 0.5 * screen.pointsPerCentimeter, y: yOffset + screen.pointsPerInch)
         }
     }
 }

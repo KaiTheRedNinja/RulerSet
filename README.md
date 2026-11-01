@@ -8,11 +8,11 @@ I plan to create a measurement app that does NOT rely on the camera, and instead
 - [x] Simple ruler, incl. right-angle
 - [x] Simple protractor
 - [x] Simple level
-- [ ] Simple pull-based measurement tape
+- [x] Simple pull-based measurement tape
 - [ ] Differential angle measurement using gyroscope
 - [x] 3-axis angle measurements
 - [ ] Inches-cm-mm setting
-- [ ] Skeuomorphic starting UI
+- [x] Skeuomorphic starting UI
 
 ## Change in Plan
 Originally, I had planned to use the phone's accelerometer to measure displacement. However, I discovered through experimentation that the iPhone's accelerometer has an error of about 0.001g, with noise of about 0.0005g. 

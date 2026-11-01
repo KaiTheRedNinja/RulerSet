@@ -13,20 +13,24 @@ struct RulerView: View {
     // TODO: consider making this app storage
     @State var topSide: Bool = true
 
+    var allowInteraction: Bool = true
+
     var body: some View {
         GeometryReader { geom in
             ZStack(alignment: .center) {
                 rulers(sizePts: geom.size)
                     .rotationEffect(topSide ? .degrees(0) : .degrees(180))
 
-                Button {
-                    withAnimation {
-                        topSide.toggle()
+                if allowInteraction {
+                    Button {
+                        withAnimation {
+                            topSide.toggle()
+                        }
+                    } label: {
+                        Image(systemName: topSide ? "rotate.right.fill" : "rotate.left.fill")
                     }
-                } label: {
-                    Image(systemName: topSide ? "rotate.right.fill" : "rotate.left.fill")
+                    .buttonStyle(.borderedProminent)
                 }
-                .buttonStyle(.borderedProminent)
             }
         }
         .ignoresSafeArea(edges: topSide ? [] : .bottom)

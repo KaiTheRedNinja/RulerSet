@@ -23,6 +23,19 @@ struct UIScreenConversion {
         )
     }
 
+    func scaled(by scale: CGFloat) -> UIScreenConversion {
+        return UIScreenConversion(
+            pixelsPerInch: self.pixelsPerInch * scale,
+            pixelsPerCentimeter: self.pixelsPerCentimeter * scale,
+            pointsPerInch: self.pointsPerInch * scale,
+            pointsPerCentimeter: self.pointsPerCentimeter * scale,
+            screenSizePoints: .init(
+                width: self.screenSizePoints.width * scale,
+                height: self.screenSizePoints.height * scale
+            )
+        )
+    }
+
     static let zero: UIScreenConversion = .init(
         pixelsPerInch: 0,
         pixelsPerCentimeter: 0,

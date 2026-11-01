@@ -11,6 +11,8 @@ import CoreMotion
 struct LevelView: View {
     @State var manager: RotationManager = .init()
 
+    var allowInteraction: Bool = true
+
     // pitch is along the phone's x (width-wise) axis
     // roll is along the phone's y (length-wise) axis
     // yaw is along the world's vertical axis (perpendicular to the ground) and is not relevant here
@@ -32,7 +34,7 @@ struct LevelView: View {
                     DiskIndicatorView(degrees: -attitude.yaw * 180 / .pi)
                         .zIndex(0)
                 }
-            } else {
+            } else if allowInteraction {
                 Text("starting up...")
             }
         }
@@ -43,22 +45,24 @@ struct LevelView: View {
             manager.stopDeviceMotion()
         }
         .toolbar {
-            Button {
-                // zero the measurements
-                withAnimation {
-                    manager.tare()
-                }
-            } label: {
-                Image(systemName: "circle.and.line.horizontal.fill")
-            }
-            .contextMenu {
+            if allowInteraction {
                 Button {
-                    // remove reference
+                    // zero the measurements
                     withAnimation {
-                        manager.referenceAttitude = nil
+                        manager.tare()
                     }
                 } label: {
-                    Label("Reset", systemImage: "arrow.counterclockwise")
+                    Image(systemName: "circle.and.line.horizontal.fill")
+                }
+                .contextMenu {
+                    Button {
+                        // remove reference
+                        withAnimation {
+                            manager.referenceAttitude = nil
+                        }
+                    } label: {
+                        Label("Reset", systemImage: "arrow.counterclockwise")
+                    }
                 }
             }
         }

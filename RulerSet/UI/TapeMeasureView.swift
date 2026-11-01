@@ -10,11 +10,13 @@ import SwiftUI
 struct TapeMeasureView: View {
     @Environment(\.screenConversions) var screen
 
-    let bodyLengthCm: CGFloat = 6.5
-    let bodyWidthCm: CGFloat = 2.8
-    let bodyHiddenCm: CGFloat = 3.5
+    var allowInteraction: Bool = true
 
-    let tapeWidthCm: CGFloat = 1.8
+    var bodyLengthCm: CGFloat = 6.5
+    var bodyWidthCm: CGFloat = 2.8
+    var bodyHiddenCm: CGFloat = 3.5
+
+    var tapeWidthCm: CGFloat = 1.8
 
     @State var measuredLengthCm: CGFloat = 0
 
@@ -48,6 +50,7 @@ struct TapeMeasureView: View {
                     }
                 }
         )
+        .disabled(!allowInteraction)
     }
 
     @ViewBuilder
@@ -101,8 +104,8 @@ struct TapeMeasureView: View {
                 let segmentLengthPts = radius * segmentLengthDeg * .pi / 180
                 // the corner radius of the feature
                 let segmentCornerRadius = segmentLengthPts/2
-                // the width of the feature
-                let segmentWidthPts = bodyWidthPts/3
+//                // the width of the feature
+//                let segmentWidthPts = bodyWidthPts/3
 
                 for index in 0..<visibleCount {
                     let startDeg = segmentOffsetDeg * CGFloat(index)
